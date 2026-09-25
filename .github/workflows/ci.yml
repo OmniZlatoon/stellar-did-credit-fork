@@ -29,6 +29,11 @@ jobs:
       - name: Run tests (regenerate snapshots if needed)
         run: SOROBAN_TEST_SNAPSHOT_FILE_UPDATE=true cargo test --workspace
 
+      - name: Run cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+
       - name: Run clippy
         run: cargo clippy --workspace -- -D warnings
 
