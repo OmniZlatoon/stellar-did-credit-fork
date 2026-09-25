@@ -319,6 +319,55 @@ export class SDKError extends Error {
   declare readonly resultXdr?: string;
 }
 
+function isComputeCooldownActiveError(error: unknown): boolean {
+  if (error === null || error === undefined) {
+    return false;
+  }
+
+  if (typeof error === "number") {
+    return error === 7;
+  }
+
+  const candidates: string[] = [];
+
+  if (typeof error === "string") {
+    candidates.push(error);
+  } else if (typeof error === "object") {
+    if ("code" in error) {
+      const code = (error as { code?: unknown }).code;
+      if (typeof code === "number" && code === 7) {
+        return true;
+      }
+      if (typeof code === "string" && code.toLowerCase().includes("cooldown")) {
+        return true;
+      }
+    }
+
+    if ("message" in error) {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === "string") {
+        candidates.push(message);
+      }
+    }
+    if ("error" in error) {
+      const nestedError = (error as { error?: unknown }).error;
+      if (typeof nestedError === "string") {
+        candidates.push(nestedError);
+      } else if (nestedError && typeof nestedError === "object") {
+        const nestedMessage = "message" in nestedError ? nestedError.message : undefined;
+        if (typeof nestedMessage === "string") {
+          candidates.push(nestedMessage);
+        }
+      }
+    }
+  }
+
+  return candidates.some((candidate) => {
+    const normalized = candidate.toLowerCase();
+    return normalized.includes("cooldown") || parseContractErrorCode(candidate) === 7;
+  });
+}
+
 export interface BatchChunkResult {
   chunkIndex: number;
   vcHashes: Buffer[];
@@ -1145,7 +1194,7 @@ export class StellarDIDCreditSDK {
     const sim = await this.server.simulateTransaction(tx);
 
     if (SorobanRpc.Api.isSimulationError(sim)) {
-      if (sim.error && sim.error.toLowerCase().includes("cooldown")) {
+      if (isComputeCooldownActiveError(sim.error)) {
         throw new SDKError(
           "COOLDOWN_ACTIVE",
           "Cooldown period is active. Please wait for the cooldown ledgers to pass before recomputing the score.",
@@ -1171,9 +1220,7 @@ export class StellarDIDCreditSDK {
       (submissionResponse) => {
         if (
           submissionResponse.errorResult &&
-          String(submissionResponse.errorResult)
-            .toLowerCase()
-            .includes("cooldown")
+          isComputeCooldownActiveError(submissionResponse.errorResult)
         ) {
           return new SDKError(
             "COOLDOWN_ACTIVE",
@@ -1196,8 +1243,7 @@ export class StellarDIDCreditSDK {
         getTransactionPollIntervalMs(this.config),
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.toLowerCase().includes("cooldown")) {
+      if (isComputeCooldownActiveError(error)) {
         throw new SDKError(
           "COOLDOWN_ACTIVE",
           "Cooldown period is active. Please wait for the cooldown ledgers to pass before recomputing the score.",
