@@ -2358,6 +2358,30 @@ describe("StellarDIDCreditSDK", () => {
       expect(mockLastContractCall?.method).toBe("get_protocol_stats");
     });
 
+    it("returns zero counters for a fresh contract", async () => {
+      mockSimulateTransaction.mockResolvedValue({
+        result: {
+          retval: {
+            value: {
+              total_dids_anchored: 0n,
+              total_vcs_anchored: 0n,
+              total_vcs_revoked: 0n,
+            },
+          },
+        },
+      });
+
+      const sdk = new StellarDIDCreditSDK(mockConfig);
+      const result = await sdk.getIdentityProtocolStats();
+
+      expect(result).toEqual({
+        totalDIDsAnchored: 0,
+        totalVCsAnchored: 0,
+        totalVCsRevoked: 0,
+      });
+      expect(mockLastContractCall?.method).toBe("get_protocol_stats");
+    });
+
     it("throws on simulation error", async () => {
       mockSimulateTransaction.mockResolvedValue({ error: "rpc error" });
 
@@ -2391,6 +2415,28 @@ describe("StellarDIDCreditSDK", () => {
       expect(result).toEqual({
         totalSubjectsScored: 3,
         totalRepaymentsRecorded: 7,
+      });
+      expect(mockLastContractCall?.method).toBe("get_protocol_stats");
+    });
+
+    it("returns zero counters for a fresh contract", async () => {
+      mockSimulateTransaction.mockResolvedValue({
+        result: {
+          retval: {
+            value: {
+              total_subjects_scored: 0n,
+              total_repayments_recorded: 0n,
+            },
+          },
+        },
+      });
+
+      const sdk = new StellarDIDCreditSDK(mockConfig);
+      const result = await sdk.getCreditProtocolStats();
+
+      expect(result).toEqual({
+        totalSubjectsScored: 0,
+        totalRepaymentsRecorded: 0,
       });
       expect(mockLastContractCall?.method).toBe("get_protocol_stats");
     });
