@@ -2144,10 +2144,11 @@ export class StellarDIDCreditSDK {
   }
 
   /**
-   * Fetch a subject's TxStats from the credit-oracle.
+   * Fetch a subject's 30-day transaction statistics from the credit-oracle.
    *
-   * @param subjectAddress - Stellar G... address of the subject
-   * @returns TxStats or null if not found
+   * @param subjectAddress - Stellar public-key address of the subject
+   * @returns Transaction volume (in stroops), transaction count, and average
+   * counterparties, or null if no statistics are recorded for the subject
    */
   async getTxStats(subjectAddress: string): Promise<TxStats | null> {
     const server = this.server;

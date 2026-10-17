@@ -2667,6 +2667,12 @@ describe("StellarDIDCreditSDK", () => {
         txCount30d: 5,
         avgCounterparties: 2,
       });
+      expect(mockLastContractCall).toMatchObject({
+        contractId: mockConfig.creditOracleId,
+        method: "get_tx_stats",
+        args: [{ address: subjectAddress }],
+      });
+      expect(mockSimulateTransaction).toHaveBeenCalledTimes(1);
     });
 
     it("returns null if not found", async () => {
@@ -2676,6 +2682,11 @@ describe("StellarDIDCreditSDK", () => {
       const sdk = new StellarDIDCreditSDK(mockConfig);
       const stats = await sdk.getTxStats(subjectAddress);
       expect(stats).toBeNull();
+      expect(mockLastContractCall).toMatchObject({
+        contractId: mockConfig.creditOracleId,
+        method: "get_tx_stats",
+        args: [{ address: subjectAddress }],
+      });
     });
   });
 
